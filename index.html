@@ -2,7 +2,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Previsor de Entradas - LotoGreen</title>
+  <title>Previsor LotoGreen v2</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -33,7 +33,7 @@
     .empate { background: #f1c40f; color: black; }
     #historico, #sugestao {
       width: 100%;
-      max-width: 400px;
+      max-width: 450px;
       margin-top: 20px;
     }
     #historico p, #sugestao p {
@@ -44,58 +44,81 @@
   </style>
 </head>
 <body>
-  <h1>Previsor LotoGreen</h1>
+  <h1>Previsor LotoGreen v2</h1>
   <div class="botao-container">
     <button class="casa" onclick="registrar('C')">Casa</button>
     <button class="visitante" onclick="registrar('V')">Visitante</button>
     <button class="empate" onclick="registrar('E')">Empate</button>
   </div>
   <div id="historico"></div>
-  <div id="sugestao"></div>
-  <script>
-    const historico = [];function registrar(resultado) {
-  historico.push(resultado);
-  atualizarHistorico();
-  analisarPadrao();
-}
+  <div id="sugestao"></div>  <script>
+    const historico = [];
 
-function atualizarHistorico() {
-  const ultimos = historico.slice(-10).reverse().join(' - ');
-  document.getElementById('historico').innerHTML = `<p><strong>Últimos:</strong> ${ultimos}</p>`;
-}
+    function registrar(resultado) {
+      historico.push(resultado);
+      atualizarHistorico();
+      analisarPadrao();
+    }
 
-function analisarPadrao() {
-  const sugestao = document.getElementById('sugestao');
-  if (historico.length < 4) {
-    sugestao.innerHTML = `<p>Aguardando mais dados para sugerir entrada...</p>`;
-    return;
-  }
+    function atualizarHistorico() {
+      const ultimos = historico.slice(-10).reverse().join(' - ');
+      document.getElementById('historico').innerHTML = `<p><strong>Últimos:</strong> ${ultimos}</p>`;
+    }
 
-  const ultimos3 = historico.slice(-3);
-  const ultimos10 = historico.slice(-10);
-  const contagem = { C: 0, V: 0, E: 0 };
-  ultimos10.forEach(r => contagem[r]++);
+    function calcularFrequencia(seq) {
+      let contagem = { C: 0, V: 0, E: 0 };
+      seq.forEach(r => contagem[r]++);
+      return contagem;
+    }
 
-  const tendencia = contagem.C > contagem.V ? 'Casa' : 'Visitante';
-  const maiorFreq = contagem.C > contagem.V ? contagem.C : contagem.V;
-  const confianca = Math.round((maiorFreq / 10) * 100);
+    function analisarPadrao() {
+      const sugestao = document.getElementById('sugestao');
+      if (historico.length < 4) {
+        sugestao.innerHTML = `<p>Aguardando mais rodadas para análise...</p>`;
+        return;
+      }
 
-  let mensagem = '';
+      const ultimos = historico.slice(-10);
+      const freq = calcularFrequencia(ultimos);
+      const ult3 = historico.slice(-3);
 
-  if (ultimos3.every(v => v === 'C')) {
-    mensagem = `Sugestão: <strong>Casa</strong> (Repetição forte - 3x Casa)`;
-  } else if (ultimos3.every(v => v === 'V')) {
-    mensagem = `Sugestão: <strong>Visitante</strong> (Repetição forte - 3x Visitante)`;
-  } else if (ultimos3[0] !== ultimos3[1] && ultimos3[1] !== ultimos3[2]) {
-    mensagem = `Sugestão: <strong>${tendencia}</strong> (Alternância detectada, tendência favorece ${tendencia})`;
-  } else {
-    mensagem = `Sugestão: <strong>${tendencia}</strong> (Tendência nos últimos 10 jogos)`;
-  }
+      let probabilidade = 0;
+      let entrada = '';
+      let razao = '';
 
-  mensagem += `<br><small>Confiabilidade estimada: ${confianca}%</small>`;
-  sugestao.innerHTML = `<p>${mensagem}</p>`;
-}
+      if (ult3.every(r => r === 'C')) {
+        entrada = 'Casa';
+        probabilidade = 78;
+        razao = 'Repetição forte de Casa';
+      } else if (ult3.every(r => r === 'V')) {
+        entrada = 'Visitante';
+        probabilidade = 76;
+        razao = 'Repetição forte de Visitante';
+      } else if (ult3[0] !== ult3[1] && ult3[1] !== ult3[2] && ult3[0] !== ult3[2]) {
+        entrada = freq.C > freq.V ? 'Casa' : 'Visitante';
+        probabilidade = 65;
+        razao = 'Alternância com tendência detectada';
+      } else if (ultimos.slice(-2).every((v, i, arr) => v === 'C')) {
+        entrada = 'Visitante';
+        probabilidade = 70;
+        razao = 'Possível quebra de repetição de Casa';
+      } else if (ultimos.slice(-2).every((v, i, arr) => v === 'V')) {
+        entrada = 'Casa';
+        probabilidade = 70;
+        razao = 'Possível quebra de repetição de Visitante';
+      } else {
+        const maior = freq.C > freq.V ? 'Casa' : 'Visitante';
+        entrada = maior;
+        probabilidade = 60;
+        razao = 'Tendência geral dos últimos 10 jogos';
+      }
 
-  </script>
-</body>
+      // Evita empate como sugestão padrão
+      sugestao.innerHTML = `
+        <p><strong>Sugestão:</strong> ${entrada}</p>
+        <p><strong>Chance estimada:</strong> ${probabilidade}%</p>
+        <p><strong>Motivo:</strong> ${razao}</p>
+      `;
+    }
+  </script></body>
 </html>
