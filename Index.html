@@ -1,0 +1,88 @@
+<!DOCTYPE html><html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Previsor de Entradas - LotoGreen</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    h1 {
+      color: #00ff88;
+    }
+    .botao-container {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 18px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .casa { background: #3498db; color: white; }
+    .visitante { background: #e74c3c; color: white; }
+    .empate { background: #f1c40f; color: black; }
+    #historico, #sugestao {
+      width: 100%;
+      max-width: 400px;
+      margin-top: 20px;
+    }
+    #historico p, #sugestao p {
+      background: #222;
+      padding: 10px;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Previsor LotoGreen</h1>
+  <div class="botao-container">
+    <button class="casa" onclick="registrar('C')">Casa</button>
+    <button class="visitante" onclick="registrar('V')">Visitante</button>
+    <button class="empate" onclick="registrar('E')">Empate</button>
+  </div>
+  <div id="historico"></div>
+  <div id="sugestao"></div>  <script>
+    const historico = [];
+
+    function registrar(resultado) {
+      historico.push(resultado);
+      atualizarHistorico();
+      analisarPadrao();
+    }
+
+    function atualizarHistorico() {
+      const h = historico.slice(-10).reverse().join(' - ');
+      document.getElementById('historico').innerHTML = `<p><strong>Últimos:</strong> ${h}</p>`;
+    }
+
+    function analisarPadrao() {
+      const sugestao = document.getElementById('sugestao');
+      if (historico.length < 3) {
+        sugestao.innerHTML = `<p>Aguardando mais dados para sugerir entrada...</p>`;
+        return;
+      }
+
+      const ultimos = historico.slice(-3);
+
+      if (ultimos.every(val => val === 'C')) {
+        sugestao.innerHTML = `<p>Sugestão: <strong>Casa</strong> (possível repetição)</p>`;
+      } else if (ultimos.every(val => val === 'V')) {
+        sugestao.innerHTML = `<p>Sugestão: <strong>Visitante</strong> (possível repetição)</p>`;
+      } else if (ultimos[0] !== ultimos[1] && ultimos[1] !== ultimos[2]) {
+        sugestao.innerHTML = `<p>Sugestão: <strong>Empate</strong> (alternância detectada)</p>`;
+      } else {
+        sugestao.innerHTML = `<p>Sugestão: <strong>Aguardando padrão mais claro</strong></p>`;
+      }
+    }
+  </script></body>
+</html>
