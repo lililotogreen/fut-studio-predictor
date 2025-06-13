@@ -54,14 +54,13 @@
   <div id="sugestao"></div>
   <div id="estatisticas"></div>  <script>
     const historico = [];
-    let totalSugestoes = 0;
     let acertos = 0;
+    let total = 0;
 
     function registrar(resultado) {
       historico.push(resultado);
       atualizarHistorico();
       analisarPadrao();
-      atualizarEstatisticas(resultado);
     }
 
     function atualizarHistorico() {
@@ -69,45 +68,47 @@
       document.getElementById('historico').innerHTML = `<p><strong>Últimos:</strong> ${h}</p>`;
     }
 
-    let ultimaSugestao = '';
     function analisarPadrao() {
       const sugestao = document.getElementById('sugestao');
+      const estatisticas = document.getElementById('estatisticas');
+
       if (historico.length < 4) {
         sugestao.innerHTML = `<p>Aguardando mais dados para sugerir entrada...</p>`;
         return;
       }
 
       const ultimos = historico.slice(-4);
-      let recomendacao = 'Aguardando padrão mais claro';
+      const ultimo = historico[historico.length - 1];
 
-      if (ultimos.every(val => val === 'C')) {
-        recomendacao = 'Casa (repetição forte)';
-        ultimaSugestao = 'C';
-      } else if (ultimos.every(val => val === 'V')) {
-        recomendacao = 'Visitante (repetição forte)';
-        ultimaSugestao = 'V';
-      } else if (ultimos.slice(-2).every(val => val === 'C')) {
-        recomendacao = 'Casa (possível repetição)';
-        ultimaSugestao = 'C';
-      } else if (ultimos.slice(-2).every(val => val === 'V')) {
-        recomendacao = 'Visitante (possível repetição)';
-        ultimaSugestao = 'V';
+      let proximaSugestao = '';
+
+      if (ultimos.every(v => v === 'C')) {
+        proximaSugestao = 'Casa (continuidade)';
+      } else if (ultimos.every(v => v === 'V')) {
+        proximaSugestao = 'Visitante (continuidade)';
+      } else if (ultimos[0] !== ultimos[1] && ultimos[1] !== ultimos[2] && ultimos[2] !== ultimos[3]) {
+        proximaSugestao = 'Casa ou Visitante (forte alternância)';
+      } else if (ultimos[0] === ultimos[1] && ultimos[2] !== ultimos[3]) {
+        proximaSugestao = 'Quebra de sequência provável - Apostar no oposto';
       } else {
-        ultimaSugestao = '';
+        proximaSugestao = 'Aguardando padrão mais claro';
       }
 
-      sugestao.innerHTML = `<p><strong>Sugestão:</strong> ${recomendacao}</p>`;
-      if (ultimaSugestao) totalSugestoes++;
-    }
+      sugestao.innerHTML = `<p>Sugestão: <strong>${proximaSugestao}</strong></p>`;
 
-    function atualizarEstatisticas(ultimoResultado) {
-      if (ultimaSugestao && ultimoResultado === ultimaSugestao) {
-        acertos++;
-      }
-      const taxa = totalSugestoes > 0 ? ((acertos / totalSugestoes) * 100).toFixed(2) : '0.00';
-      document.getElementById('estatisticas').innerHTML = `
-        <p><strong>Acertos:</strong> ${acertos} / ${totalSugestoes}</p>
-        <p><strong>Assertividade:</strong> ${taxa}%</p>
+      // Estatísticas básicas (sem considerar empate)
+      const jogadasSemEmpate = historico.filter(h => h === 'C' || h === 'V');
+      const freqC = jogadasSemEmpate.filter(x => x === 'C').length;
+      const freqV = jogadasSemEmpate.filter(x => x === 'V').length;
+      const totalJogos = jogadasSemEmpate.length;
+
+      const pctC = ((freqC / totalJogos) * 100).toFixed(1);
+      const pctV = ((freqV / totalJogos) * 100).toFixed(1);
+
+      estatisticas.innerHTML = `
+        <p><strong>Estatísticas (sem empates):</strong></p>
+        <p>Casa: ${pctC}% | Visitante: ${pctV}%</p>
+        <p>Total analisado: ${totalJogos} partidas</p>
       `;
     }
   </script></body>
