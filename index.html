@@ -2,7 +2,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Previsor LotoGreen Avançado</title>
+  <title>Previsor de Entradas - LotoGreen</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -31,12 +31,12 @@
     .casa { background: #3498db; color: white; }
     .visitante { background: #e74c3c; color: white; }
     .empate { background: #f1c40f; color: black; }
-    #historico, #sugestao, #estatisticas, #banca {
+    #historico, #sugestao, #estatisticas {
       width: 100%;
-      max-width: 500px;
+      max-width: 400px;
       margin-top: 20px;
     }
-    #historico p, #sugestao p, #estatisticas p, #banca p {
+    #historico p, #sugestao p, #estatisticas p {
       background: #222;
       padding: 10px;
       border-radius: 5px;
@@ -44,7 +44,7 @@
   </style>
 </head>
 <body>
-  <h1>Previsor LotoGreen Avançado</h1>
+  <h1>Previsor LotoGreen</h1>
   <div class="botao-container">
     <button class="casa" onclick="registrar('C')">Casa</button>
     <button class="visitante" onclick="registrar('V')">Visitante</button>
@@ -52,21 +52,16 @@
   </div>
   <div id="historico"></div>
   <div id="sugestao"></div>
-  <div id="estatisticas"></div>
-  <div id="banca"></div>  <script>
+  <div id="estatisticas"></div>  <script>
     const historico = [];
-    const estatisticas = { C: 0, V: 0, E: 0, acertos: 0, totalSugestoes: 0 };
-    let banca = 100;
-    let ultimaSugestao = null;
+    let totalSugestoes = 0;
+    let acertos = 0;
 
     function registrar(resultado) {
       historico.push(resultado);
-      estatisticas[resultado]++;
-      verificarAcerto(resultado);
       atualizarHistorico();
       analisarPadrao();
-      atualizarEstatisticas();
-      atualizarBanca();
+      atualizarEstatisticas(resultado);
     }
 
     function atualizarHistorico() {
@@ -74,50 +69,46 @@
       document.getElementById('historico').innerHTML = `<p><strong>Últimos:</strong> ${h}</p>`;
     }
 
+    let ultimaSugestao = '';
     function analisarPadrao() {
       const sugestao = document.getElementById('sugestao');
-      if (historico.length < 3) {
+      if (historico.length < 4) {
         sugestao.innerHTML = `<p>Aguardando mais dados para sugerir entrada...</p>`;
-        ultimaSugestao = null;
         return;
       }
 
-      const ultimos = historico.slice(-3);
-      let sugest = 'Aguardando padrão mais claro';
+      const ultimos = historico.slice(-4);
+      let recomendacao = 'Aguardando padrão mais claro';
 
-      if (ultimos.every(val => val === 'C')) sugest = 'Casa (possível repetição)';
-      else if (ultimos.every(val => val === 'V')) sugest = 'Visitante (possível repetição)';
-      else if (ultimos[0] !== ultimos[1] && ultimos[1] !== ultimos[2]) sugest = 'Empate (alternância detectada)';
-      else if (historico.slice(-5).filter(r => r === 'E').length >= 2) sugest = 'Evite apostar agora (muitos empates)';
-      else if (historico.slice(-4).every(r => r !== 'E')) sugest = 'Empate possível após ausência prolongada';
-
-      sugestao.innerHTML = `<p><strong>Sugestão:</strong> ${sugest}</p>`;
-      ultimaSugestao = sugest.split(' ')[0];
-      estatisticas.totalSugestoes++;
-    }
-
-    function verificarAcerto(resultado) {
-      if (ultimaSugestao && ultimaSugestao.charAt(0) === resultado) {
-        estatisticas.acertos++;
-        banca += 1; // lucro simulado
-      } else if (ultimaSugestao) {
-        banca -= 1; // perda simulada
+      if (ultimos.every(val => val === 'C')) {
+        recomendacao = 'Casa (repetição forte)';
+        ultimaSugestao = 'C';
+      } else if (ultimos.every(val => val === 'V')) {
+        recomendacao = 'Visitante (repetição forte)';
+        ultimaSugestao = 'V';
+      } else if (ultimos.slice(-2).every(val => val === 'C')) {
+        recomendacao = 'Casa (possível repetição)';
+        ultimaSugestao = 'C';
+      } else if (ultimos.slice(-2).every(val => val === 'V')) {
+        recomendacao = 'Visitante (possível repetição)';
+        ultimaSugestao = 'V';
+      } else {
+        ultimaSugestao = '';
       }
+
+      sugestao.innerHTML = `<p><strong>Sugestão:</strong> ${recomendacao}</p>`;
+      if (ultimaSugestao) totalSugestoes++;
     }
 
-    function atualizarEstatisticas() {
-      const acertoPercentual = estatisticas.totalSugestoes > 0 ? 
-        ((estatisticas.acertos / estatisticas.totalSugestoes) * 100).toFixed(1) : 0;
-
+    function atualizarEstatisticas(ultimoResultado) {
+      if (ultimaSugestao && ultimoResultado === ultimaSugestao) {
+        acertos++;
+      }
+      const taxa = totalSugestoes > 0 ? ((acertos / totalSugestoes) * 100).toFixed(2) : '0.00';
       document.getElementById('estatisticas').innerHTML = `
-        <p><strong>Estatísticas:</strong></p>
-        <p>Casa: ${estatisticas.C} | Visitante: ${estatisticas.V} | Empate: ${estatisticas.E}</p>
-        <p>Taxa de acerto: ${acertoPercentual}% (${estatisticas.acertos}/${estatisticas.totalSugestoes})</p>
+        <p><strong>Acertos:</strong> ${acertos} / ${totalSugestoes}</p>
+        <p><strong>Assertividade:</strong> ${taxa}%</p>
       `;
-    }
-
-    function atualizarBanca() {
-      document.getElementById('banca').innerHTML = `<p><strong>Banca virtual:</strong> R$ ${banca.toFixed(2)}</p>`;
     }
   </script></body>
 </html>
