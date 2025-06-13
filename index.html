@@ -31,12 +31,12 @@
     .casa { background: #3498db; color: white; }
     .visitante { background: #e74c3c; color: white; }
     .empate { background: #f1c40f; color: black; }
-    #historico, #sugestao, #estatisticas {
+    #historico, #sugestao {
       width: 100%;
       max-width: 400px;
       margin-top: 20px;
     }
-    #historico p, #sugestao p, #estatisticas p {
+    #historico p, #sugestao p {
       background: #222;
       padding: 10px;
       border-radius: 5px;
@@ -52,64 +52,50 @@
   </div>
   <div id="historico"></div>
   <div id="sugestao"></div>
-  <div id="estatisticas"></div>  <script>
-    const historico = [];
-    let acertos = 0;
-    let total = 0;
+  <script>
+    const historico = [];function registrar(resultado) {
+  historico.push(resultado);
+  atualizarHistorico();
+  analisarPadrao();
+}
 
-    function registrar(resultado) {
-      historico.push(resultado);
-      atualizarHistorico();
-      analisarPadrao();
-    }
+function atualizarHistorico() {
+  const ultimos = historico.slice(-10).reverse().join(' - ');
+  document.getElementById('historico').innerHTML = `<p><strong>Últimos:</strong> ${ultimos}</p>`;
+}
 
-    function atualizarHistorico() {
-      const h = historico.slice(-10).reverse().join(' - ');
-      document.getElementById('historico').innerHTML = `<p><strong>Últimos:</strong> ${h}</p>`;
-    }
+function analisarPadrao() {
+  const sugestao = document.getElementById('sugestao');
+  if (historico.length < 4) {
+    sugestao.innerHTML = `<p>Aguardando mais dados para sugerir entrada...</p>`;
+    return;
+  }
 
-    function analisarPadrao() {
-      const sugestao = document.getElementById('sugestao');
-      const estatisticas = document.getElementById('estatisticas');
+  const ultimos3 = historico.slice(-3);
+  const ultimos10 = historico.slice(-10);
+  const contagem = { C: 0, V: 0, E: 0 };
+  ultimos10.forEach(r => contagem[r]++);
 
-      if (historico.length < 4) {
-        sugestao.innerHTML = `<p>Aguardando mais dados para sugerir entrada...</p>`;
-        return;
-      }
+  const tendencia = contagem.C > contagem.V ? 'Casa' : 'Visitante';
+  const maiorFreq = contagem.C > contagem.V ? contagem.C : contagem.V;
+  const confianca = Math.round((maiorFreq / 10) * 100);
 
-      const ultimos = historico.slice(-4);
-      const ultimo = historico[historico.length - 1];
+  let mensagem = '';
 
-      let proximaSugestao = '';
+  if (ultimos3.every(v => v === 'C')) {
+    mensagem = `Sugestão: <strong>Casa</strong> (Repetição forte - 3x Casa)`;
+  } else if (ultimos3.every(v => v === 'V')) {
+    mensagem = `Sugestão: <strong>Visitante</strong> (Repetição forte - 3x Visitante)`;
+  } else if (ultimos3[0] !== ultimos3[1] && ultimos3[1] !== ultimos3[2]) {
+    mensagem = `Sugestão: <strong>${tendencia}</strong> (Alternância detectada, tendência favorece ${tendencia})`;
+  } else {
+    mensagem = `Sugestão: <strong>${tendencia}</strong> (Tendência nos últimos 10 jogos)`;
+  }
 
-      if (ultimos.every(v => v === 'C')) {
-        proximaSugestao = 'Casa (continuidade)';
-      } else if (ultimos.every(v => v === 'V')) {
-        proximaSugestao = 'Visitante (continuidade)';
-      } else if (ultimos[0] !== ultimos[1] && ultimos[1] !== ultimos[2] && ultimos[2] !== ultimos[3]) {
-        proximaSugestao = 'Casa ou Visitante (forte alternância)';
-      } else if (ultimos[0] === ultimos[1] && ultimos[2] !== ultimos[3]) {
-        proximaSugestao = 'Quebra de sequência provável - Apostar no oposto';
-      } else {
-        proximaSugestao = 'Aguardando padrão mais claro';
-      }
+  mensagem += `<br><small>Confiabilidade estimada: ${confianca}%</small>`;
+  sugestao.innerHTML = `<p>${mensagem}</p>`;
+}
 
-      sugestao.innerHTML = `<p>Sugestão: <strong>${proximaSugestao}</strong></p>`;
-
-      // Estatísticas básicas (sem considerar empate)
-      const jogadasSemEmpate = historico.filter(h => h === 'C' || h === 'V');
-      const freqC = jogadasSemEmpate.filter(x => x === 'C').length;
-      const freqV = jogadasSemEmpate.filter(x => x === 'V').length;
-      const totalJogos = jogadasSemEmpate.length;
-
-      const pctC = ((freqC / totalJogos) * 100).toFixed(1);
-      const pctV = ((freqV / totalJogos) * 100).toFixed(1);
-
-      estatisticas.innerHTML = `
-        <p><strong>Estatísticas (sem empates):</strong></p>
-        <p>Casa: ${pctC}% | Visitante: ${pctV}%</p>
-        <p>Total analisado: ${totalJogos} partidas</p>
-      `;
-    }
-  </script></body>
+  </script>
+</body>
 </html>
