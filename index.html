@@ -2,7 +2,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Previsor LotoGreen v2</title>
+  <title>Previsor de Entradas - LotoGreen</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -33,7 +33,7 @@
     .empate { background: #f1c40f; color: black; }
     #historico, #sugestao {
       width: 100%;
-      max-width: 450px;
+      max-width: 400px;
       margin-top: 20px;
     }
     #historico p, #sugestao p {
@@ -44,7 +44,7 @@
   </style>
 </head>
 <body>
-  <h1>Previsor LotoGreen v2</h1>
+  <h1>Previsor LotoGreen</h1>
   <div class="botao-container">
     <button class="casa" onclick="registrar('C')">Casa</button>
     <button class="visitante" onclick="registrar('V')">Visitante</button>
@@ -61,64 +61,46 @@
     }
 
     function atualizarHistorico() {
-      const ultimos = historico.slice(-10).reverse().join(' - ');
-      document.getElementById('historico').innerHTML = `<p><strong>Últimos:</strong> ${ultimos}</p>`;
+      const h = historico.slice(-10).reverse().join(' - ');
+      document.getElementById('historico').innerHTML = `<p><strong>Últimos:</strong> ${h}</p>`;
     }
 
-    function calcularFrequencia(seq) {
-      let contagem = { C: 0, V: 0, E: 0 };
-      seq.forEach(r => contagem[r]++);
-      return contagem;
+    function contarOcorrencias(arr, valor) {
+      return arr.filter(x => x === valor).length;
     }
 
     function analisarPadrao() {
       const sugestao = document.getElementById('sugestao');
-      if (historico.length < 4) {
-        sugestao.innerHTML = `<p>Aguardando mais rodadas para análise...</p>`;
+      if (historico.length < 5) {
+        sugestao.innerHTML = `<p>Aguardando mais dados para sugerir entrada...</p>`;
         return;
       }
 
-      const ultimos = historico.slice(-10);
-      const freq = calcularFrequencia(ultimos);
-      const ult3 = historico.slice(-3);
+      const ultimos = historico.slice(-6);
+      const ultimos3 = historico.slice(-3);
 
-      let probabilidade = 0;
-      let entrada = '';
-      let razao = '';
+      const countC = contarOcorrencias(ultimos, 'C');
+      const countV = contarOcorrencias(ultimos, 'V');
+      const countE = contarOcorrencias(ultimos, 'E');
 
-      if (ult3.every(r => r === 'C')) {
-        entrada = 'Casa';
-        probabilidade = 78;
-        razao = 'Repetição forte de Casa';
-      } else if (ult3.every(r => r === 'V')) {
-        entrada = 'Visitante';
-        probabilidade = 76;
-        razao = 'Repetição forte de Visitante';
-      } else if (ult3[0] !== ult3[1] && ult3[1] !== ult3[2] && ult3[0] !== ult3[2]) {
-        entrada = freq.C > freq.V ? 'Casa' : 'Visitante';
-        probabilidade = 65;
-        razao = 'Alternância com tendência detectada';
-      } else if (ultimos.slice(-2).every((v, i, arr) => v === 'C')) {
-        entrada = 'Visitante';
-        probabilidade = 70;
-        razao = 'Possível quebra de repetição de Casa';
-      } else if (ultimos.slice(-2).every((v, i, arr) => v === 'V')) {
-        entrada = 'Casa';
-        probabilidade = 70;
-        razao = 'Possível quebra de repetição de Visitante';
+      let scoreCasa = countC / ultimos.length;
+      let scoreVisitante = countV / ultimos.length;
+
+      if (ultimos3.every(x => x === 'C') || (countC > countV && countC >= 3)) {
+        sugestao.innerHTML = `<p><strong>Alta chance de CASA</strong> (tendência dominante)</p>`;
+      } else if (ultimos3.every(x => x === 'V') || (countV > countC && countV >= 3)) {
+        sugestao.innerHTML = `<p><strong>Alta chance de VISITANTE</strong> (tendência dominante)</p>`;
+      } else if (ultimos3[0] !== ultimos3[1] && ultimos3[1] !== ultimos3[2]) {
+        sugestao.innerHTML = `<p><strong>Alternância detectada</strong> (evite entrada)</p>`;
+      } else if (scoreCasa > 0.6) {
+        sugestao.innerHTML = `<p><strong>Probabilidade CASA:</strong> ${(scoreCasa * 100).toFixed(1)}%</p>`;
+      } else if (scoreVisitante > 0.6) {
+        sugestao.innerHTML = `<p><strong>Probabilidade VISITANTE:</strong> ${(scoreVisitante * 100).toFixed(1)}%</p>`;
+      } else if (countE >= 2) {
+        sugestao.innerHTML = `<p><strong>Empate possível</strong> (mas baixo foco)</p>`;
       } else {
-        const maior = freq.C > freq.V ? 'Casa' : 'Visitante';
-        entrada = maior;
-        probabilidade = 60;
-        razao = 'Tendência geral dos últimos 10 jogos';
+        sugestao.innerHTML = `<p><strong>Aguardando padrão mais claro...</strong></p>`;
       }
-
-      // Evita empate como sugestão padrão
-      sugestao.innerHTML = `
-        <p><strong>Sugestão:</strong> ${entrada}</p>
-        <p><strong>Chance estimada:</strong> ${probabilidade}%</p>
-        <p><strong>Motivo:</strong> ${razao}</p>
-      `;
     }
   </script></body>
-</html>
+</html>j
