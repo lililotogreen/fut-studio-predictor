@@ -31,92 +31,103 @@
     .casa { background: #3498db; color: white; }
     .visitante { background: #e74c3c; color: white; }
     .empate { background: #f1c40f; color: black; }
-    #historico, #sugestao, #cartasHistorico {
+    #historico, #sugestao {
       width: 100%;
-      max-width: 500px;
+      max-width: 400px;
       margin-top: 20px;
     }
-    #historico p, #sugestao p, #cartasHistorico p {
+    #historico p, #sugestao p {
       background: #222;
       padding: 10px;
       border-radius: 5px;
     }
-    input[type="text"] {
-      padding: 8px;
-      margin-top: 10px;
+    .inputs-cartas {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    input {
+      padding: 5px;
       border-radius: 5px;
       border: none;
-      width: 80%;
     }
   </style>
 </head>
 <body>
-  <h1>Previsor LotoGreen</h1>  <div class="botao-container">
+  <h1>Previsor LotoGreen</h1>
+  <div class="inputs-cartas">
+    <input id="cartaCasa" type="text" placeholder="Carta Casa (ex: A, K, 10)" />
+    <input id="cartaVisitante" type="text" placeholder="Carta Visitante (ex: Q, 7, J)" />
+  </div>
+  <div class="botao-container">
     <button class="casa" onclick="registrar('C')">Casa</button>
     <button class="visitante" onclick="registrar('V')">Visitante</button>
     <button class="empate" onclick="registrar('E')">Empate</button>
-  </div>  <input type="text" id="cartaCasa" placeholder="Carta da Casa (ex: 8)" />
-  <input type="text" id="cartaVisitante" placeholder="Carta do Visitante (ex: 6)" />  <div id="historico"></div>
-  <div id="cartasHistorico"></div>
-  <div id="sugestao"></div>  <script>
-    const historico = [];
-    const cartasHistorico = [];
+  </div>
+  <div id="historico"></div>
+  <div id="sugestao"></div>
+  <script>
+    const historico = [];const valoresCartas = {
+  'A': 1, '2': 2, '3': 3, '4': 4,
+  '5': 5, '6': 6, '7': 7, '8': 8,
+  '9': 9, '10': 10, 'J': 11,
+  'Q': 12, 'K': 13
+};
 
-    function registrar(resultado) {
-      const cartaCasa = parseInt(document.getElementById('cartaCasa').value);
-      const cartaVisitante = parseInt(document.getElementById('cartaVisitante').value);
+function registrar(resultado) {
+  const cartaCasa = document.getElementById('cartaCasa').value.trim().toUpperCase();
+  const cartaVisitante = document.getElementById('cartaVisitante').value.trim().toUpperCase();
 
-      if (isNaN(cartaCasa) || isNaN(cartaVisitante)) {
-        alert("Digite as cartas da Casa e do Visitante antes de registrar.");
-        return;
-      }
+  if (!valoresCartas[cartaCasa] || !valoresCartas[cartaVisitante]) {
+    alert("Cartas inválidas. Use A, 2-10, J, Q ou K.");
+    return;
+  }
 
-      historico.push(resultado);
-      cartasHistorico.push({ casa: cartaCasa, visitante: cartaVisitante });
+  historico.push({
+    resultado,
+    cartaCasa,
+    cartaVisitante
+  });
 
-      atualizarHistorico();
-      analisarPadrao();
-    }
+  atualizarHistorico();
+  analisarPadrao();
 
-    function atualizarHistorico() {
-      const ultimos = historico.slice(-10).reverse().join(' - ');
-      document.getElementById('historico').innerHTML = `<p><strong>Últimos Resultados:</strong> ${ultimos}</p>`;
+  document.getElementById('cartaCasa').value = '';
+  document.getElementById('cartaVisitante').value = '';
+}
 
-      const ultimasCartas = cartasHistorico.slice(-10).reverse().map((c, i) => `Rodada ${i + 1}: Casa ${c.casa} x ${c.visitante} Visitante`).join('<br>');
-      document.getElementById('cartasHistorico').innerHTML = `<p><strong>Cartas:</strong><br>${ultimasCartas}</p>`;
-    }
+function atualizarHistorico() {
+  const ultimos = historico.slice(-10).reverse().map(h => `${h.resultado} (C:${h.cartaCasa}, V:${h.cartaVisitante})`).join(' - ');
+  document.getElementById('historico').innerHTML = `<p><strong>Últimos:</strong> ${ultimos}</p>`;
+}
 
-    function analisarPadrao() {
-      const sugestao = document.getElementById('sugestao');
-      if (historico.length < 3) {
-        sugestao.innerHTML = `<p>Aguardando mais dados para sugerir entrada...</p>`;
-        return;
-      }
+function analisarPadrao() {
+  const sugestao = document.getElementById('sugestao');
 
-      const ultimos = historico.slice(-6);
-      const cartas = cartasHistorico.slice(-6);
+  if (historico.length < 3) {
+    sugestao.innerHTML = `<p>Aguardando mais dados para sugerir entrada...</p>`;
+    return;
+  }
 
-      const freq = { C: 0, V: 0, E: 0 };
-      ultimos.forEach(r => freq[r]++);
+  const ultimos = historico.slice(-3);
+  const resultados = ultimos.map(h => h.resultado);
 
-      const mediaCasa = cartas.reduce((sum, c) => sum + c.casa, 0) / cartas.length;
-      const mediaVisitante = cartas.reduce((sum, c) => sum + c.visitante, 0) / cartas.length;
+  const mediaCasa = ultimos.reduce((s, h) => s + valoresCartas[h.cartaCasa], 0) / 3;
+  const mediaVisitante = ultimos.reduce((s, h) => s + valoresCartas[h.cartaVisitante], 0) / 3;
 
-      let padrao = 'Aguardando padrão mais claro';
+  if (resultados.every(r => r === 'C')) {
+    sugestao.innerHTML = `<p>Sugestão: <strong>Casa</strong> (sequência de vitórias)</p>`;
+  } else if (resultados.every(r => r === 'V')) {
+    sugestao.innerHTML = `<p>Sugestão: <strong>Visitante</strong> (sequência de vitórias)</p>`;
+  } else if (mediaCasa > mediaVisitante) {
+    sugestao.innerHTML = `<p>Sugestão: <strong>Casa</strong> (cartas mais fortes)</p>`;
+  } else if (mediaVisitante > mediaCasa) {
+    sugestao.innerHTML = `<p>Sugestão: <strong>Visitante</strong> (cartas mais fortes)</p>`;
+  } else {
+    sugestao.innerHTML = `<p>Sugestão: <strong>Aguardando padrão mais claro</strong></p>`;
+  }
+}
 
-      if (freq.C >= 4 && mediaCasa > mediaVisitante) {
-        padrao = 'Casa (forte tendência)';
-      } else if (freq.V >= 4 && mediaVisitante > mediaCasa) {
-        padrao = 'Visitante (forte tendência)';
-      } else if (ultimos.slice(-3).every((v, i, arr) => v !== arr[i - 1])) {
-        padrao = 'Evitar entrada (muita alternância)';
-      } else if (ultimos.slice(-3).every(v => v === 'C')) {
-        padrao = 'Casa (repetição detectada)';
-      } else if (ultimos.slice(-3).every(v => v === 'V')) {
-        padrao = 'Visitante (repetição detectada)';
-      }
-
-      sugestao.innerHTML = `<p>Sugestão: <strong>${padrao}</strong><br>Média Cartas: Casa ${mediaCasa.toFixed(1)} x ${mediaVisitante.toFixed(1)} Visitante</p>`;
-    }
-  </script></body>
+  </script>
+</body>
 </html>
