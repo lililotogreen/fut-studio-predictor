@@ -31,76 +31,92 @@
     .casa { background: #3498db; color: white; }
     .visitante { background: #e74c3c; color: white; }
     .empate { background: #f1c40f; color: black; }
-    #historico, #sugestao {
+    #historico, #sugestao, #cartasHistorico {
       width: 100%;
-      max-width: 400px;
+      max-width: 500px;
       margin-top: 20px;
     }
-    #historico p, #sugestao p {
+    #historico p, #sugestao p, #cartasHistorico p {
       background: #222;
       padding: 10px;
       border-radius: 5px;
     }
+    input[type="text"] {
+      padding: 8px;
+      margin-top: 10px;
+      border-radius: 5px;
+      border: none;
+      width: 80%;
+    }
   </style>
 </head>
 <body>
-  <h1>Previsor LotoGreen</h1>
-  <div class="botao-container">
+  <h1>Previsor LotoGreen</h1>  <div class="botao-container">
     <button class="casa" onclick="registrar('C')">Casa</button>
     <button class="visitante" onclick="registrar('V')">Visitante</button>
     <button class="empate" onclick="registrar('E')">Empate</button>
-  </div>
-  <div id="historico"></div>
+  </div>  <input type="text" id="cartaCasa" placeholder="Carta da Casa (ex: 8)" />
+  <input type="text" id="cartaVisitante" placeholder="Carta do Visitante (ex: 6)" />  <div id="historico"></div>
+  <div id="cartasHistorico"></div>
   <div id="sugestao"></div>  <script>
     const historico = [];
+    const cartasHistorico = [];
 
     function registrar(resultado) {
+      const cartaCasa = parseInt(document.getElementById('cartaCasa').value);
+      const cartaVisitante = parseInt(document.getElementById('cartaVisitante').value);
+
+      if (isNaN(cartaCasa) || isNaN(cartaVisitante)) {
+        alert("Digite as cartas da Casa e do Visitante antes de registrar.");
+        return;
+      }
+
       historico.push(resultado);
+      cartasHistorico.push({ casa: cartaCasa, visitante: cartaVisitante });
+
       atualizarHistorico();
       analisarPadrao();
     }
 
     function atualizarHistorico() {
-      const h = historico.slice(-10).reverse().join(' - ');
-      document.getElementById('historico').innerHTML = `<p><strong>Últimos:</strong> ${h}</p>`;
-    }
+      const ultimos = historico.slice(-10).reverse().join(' - ');
+      document.getElementById('historico').innerHTML = `<p><strong>Últimos Resultados:</strong> ${ultimos}</p>`;
 
-    function contarOcorrencias(arr, valor) {
-      return arr.filter(x => x === valor).length;
+      const ultimasCartas = cartasHistorico.slice(-10).reverse().map((c, i) => `Rodada ${i + 1}: Casa ${c.casa} x ${c.visitante} Visitante`).join('<br>');
+      document.getElementById('cartasHistorico').innerHTML = `<p><strong>Cartas:</strong><br>${ultimasCartas}</p>`;
     }
 
     function analisarPadrao() {
       const sugestao = document.getElementById('sugestao');
-      if (historico.length < 5) {
+      if (historico.length < 3) {
         sugestao.innerHTML = `<p>Aguardando mais dados para sugerir entrada...</p>`;
         return;
       }
 
       const ultimos = historico.slice(-6);
-      const ultimos3 = historico.slice(-3);
+      const cartas = cartasHistorico.slice(-6);
 
-      const countC = contarOcorrencias(ultimos, 'C');
-      const countV = contarOcorrencias(ultimos, 'V');
-      const countE = contarOcorrencias(ultimos, 'E');
+      const freq = { C: 0, V: 0, E: 0 };
+      ultimos.forEach(r => freq[r]++);
 
-      let scoreCasa = countC / ultimos.length;
-      let scoreVisitante = countV / ultimos.length;
+      const mediaCasa = cartas.reduce((sum, c) => sum + c.casa, 0) / cartas.length;
+      const mediaVisitante = cartas.reduce((sum, c) => sum + c.visitante, 0) / cartas.length;
 
-      if (ultimos3.every(x => x === 'C') || (countC > countV && countC >= 3)) {
-        sugestao.innerHTML = `<p><strong>Alta chance de CASA</strong> (tendência dominante)</p>`;
-      } else if (ultimos3.every(x => x === 'V') || (countV > countC && countV >= 3)) {
-        sugestao.innerHTML = `<p><strong>Alta chance de VISITANTE</strong> (tendência dominante)</p>`;
-      } else if (ultimos3[0] !== ultimos3[1] && ultimos3[1] !== ultimos3[2]) {
-        sugestao.innerHTML = `<p><strong>Alternância detectada</strong> (evite entrada)</p>`;
-      } else if (scoreCasa > 0.6) {
-        sugestao.innerHTML = `<p><strong>Probabilidade CASA:</strong> ${(scoreCasa * 100).toFixed(1)}%</p>`;
-      } else if (scoreVisitante > 0.6) {
-        sugestao.innerHTML = `<p><strong>Probabilidade VISITANTE:</strong> ${(scoreVisitante * 100).toFixed(1)}%</p>`;
-      } else if (countE >= 2) {
-        sugestao.innerHTML = `<p><strong>Empate possível</strong> (mas baixo foco)</p>`;
-      } else {
-        sugestao.innerHTML = `<p><strong>Aguardando padrão mais claro...</strong></p>`;
+      let padrao = 'Aguardando padrão mais claro';
+
+      if (freq.C >= 4 && mediaCasa > mediaVisitante) {
+        padrao = 'Casa (forte tendência)';
+      } else if (freq.V >= 4 && mediaVisitante > mediaCasa) {
+        padrao = 'Visitante (forte tendência)';
+      } else if (ultimos.slice(-3).every((v, i, arr) => v !== arr[i - 1])) {
+        padrao = 'Evitar entrada (muita alternância)';
+      } else if (ultimos.slice(-3).every(v => v === 'C')) {
+        padrao = 'Casa (repetição detectada)';
+      } else if (ultimos.slice(-3).every(v => v === 'V')) {
+        padrao = 'Visitante (repetição detectada)';
       }
+
+      sugestao.innerHTML = `<p>Sugestão: <strong>${padrao}</strong><br>Média Cartas: Casa ${mediaCasa.toFixed(1)} x ${mediaVisitante.toFixed(1)} Visitante</p>`;
     }
   </script></body>
-</html>j
+</html>
